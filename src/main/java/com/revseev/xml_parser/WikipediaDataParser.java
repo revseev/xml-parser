@@ -8,6 +8,7 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.zip.ZipInputStream;
 
 public class WikipediaDataParser {
 
@@ -15,23 +16,25 @@ public class WikipediaDataParser {
     private static final String ELEMENT_NAME = "name";
     private static final String ELEMENT_ID = "id";
 
-    private final String file;
+    private final String filePath;
     private final XMLInputFactory factory = XMLInputFactory.newInstance();
     private final List<WikipediaPage> pages;
 
-    public WikipediaDataParser(final String file, final List<WikipediaPage> pages) {
-        this.file = file;
+    public WikipediaDataParser(final String filePath, final List<WikipediaPage> pages) {
+        this.filePath = filePath;
         this.pages = pages;
     }
 
     public void parse() throws IOException, XMLStreamException {
-        try (final InputStream stream = this.getClass().getResourceAsStream(file)) {
-            final XMLEventReader reader = factory.createXMLEventReader(stream);
-            while (reader.hasNext()) {
-                final XMLEvent event = reader.nextEvent();
-                if (event.isStartElement() && event.asStartElement().getName()
-                                                   .getLocalPart().equals(ELEMENT_PAGE)) {
-                    parsePage(reader);
+        try (final InputStream stream = this.getClass().getResourceAsStream(filePath)) {
+            try (final ZipInputStream zip = new ZipInputStream(stream)) {
+                final XMLEventReader reader = factory.createXMLEventReader(zip);
+                while (reader.hasNext()) {
+                    final XMLEvent event = reader.nextEvent();
+                    if (event.isStartElement() && event.asStartElement().getName()
+                                                       .getLocalPart().equals(ELEMENT_PAGE)) {
+                        parsePage(reader);
+                    }
                 }
             }
         }
